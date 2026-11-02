@@ -1,37 +1,46 @@
+import { Endpoint } from '../types/enums';
 import AppLoader from './appLoader';
+import { Callback } from './loader';
 
 class AppController extends AppLoader {
-    getSources(callback) {
+    public getSources<T>(callback: Callback<T>): void {
         super.getResp(
             {
-                endpoint: 'sources',
+                endpoint: Endpoint.Sources,
             },
             callback
         );
     }
 
-    getNews(e, callback) {
-        let target = e.target;
-        const newsContainer = e.currentTarget;
+    public getNews<T>(e: Event, callback: Callback<T>): void {
+        let target: EventTarget | null = e.target;
+        const newsContainer: EventTarget | null = e.currentTarget;
 
         while (target !== newsContainer) {
-            if (target.classList.contains('source__item')) {
-                const sourceId = target.getAttribute('data-source-id');
-                if (newsContainer.getAttribute('data-source') !== sourceId) {
-                    newsContainer.setAttribute('data-source', sourceId);
-                    super.getResp(
-                        {
-                            endpoint: 'everything',
-                            options: {
-                                sources: sourceId,
+            if (target !== null) {
+                const targetElement: Element = target as Element;
+
+                if (targetElement.classList.contains('source__item')) {
+                    const sourceId = targetElement.getAttribute('data-source-id');
+                    const newsContainerElement = newsContainer as Element;
+
+                    if (sourceId !== null && newsContainerElement.getAttribute('data-source') !== sourceId) {
+                        newsContainerElement.setAttribute('data-source', sourceId);
+                        super.getResp(
+                            {
+                                endpoint: Endpoint.Everything,
+                                options: {
+                                    sources: sourceId,
+                                },
                             },
-                        },
-                        callback
-                    );
+                            callback
+                        );
+                    }
+                    return;
                 }
-                return;
+
+                target = targetElement.parentNode;
             }
-            target = target.parentNode;
         }
     }
 }
