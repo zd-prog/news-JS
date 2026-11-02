@@ -1,19 +1,36 @@
+import { Endpoint, HttpMethod } from '../types/enums';
+
+export type Callback<T> = (data: T) => void;
+
+export type UrlOptions = {
+    apiKey?: string;
+    sources?: string;
+};
+
+export interface Request {
+    endpoint: Endpoint;
+    options?: UrlOptions;
+}
+
 class Loader {
-    constructor(baseLink, options) {
+    private readonly baseLink: string | undefined;
+    private readonly options: UrlOptions;
+
+    constructor(baseLink: string | undefined, options: UrlOptions) {
         this.baseLink = baseLink;
         this.options = options;
     }
 
-    getResp(
-        { endpoint, options = {} },
-        callback = () => {
+    public getResp<T>(
+        { endpoint, options = {} }: Request,
+        callback: Callback<T> = () => {
             console.error('No callback for GET response');
         }
-    ) {
-        this.load('GET', endpoint, callback, options);
+    ): void {
+        this.load(HttpMethod.Get, endpoint, callback, options);
     }
 
-    errorHandler(res) {
+    public errorHandler(res: Response): Response {
         if (!res.ok) {
             if (res.status === 401 || res.status === 404)
                 console.log(`Sorry, but there is ${res.status} error: ${res.statusText}`);
@@ -23,18 +40,18 @@ class Loader {
         return res;
     }
 
-    makeUrl(options, endpoint) {
+    public makeUrl(options: UrlOptions, endpoint: Endpoint): string {
         const urlOptions = { ...this.options, ...options };
         let url = `${this.baseLink}${endpoint}?`;
 
         Object.keys(urlOptions).forEach((key) => {
-            url += `${key}=${urlOptions[key]}&`;
+            url += `${key}=${urlOptions[key as keyof typeof urlOptions]}&`;
         });
 
         return url.slice(0, -1);
     }
 
-    load(method, endpoint, callback, options = {}) {
+    public load<T>(method: HttpMethod, endpoint: Endpoint, callback: Callback<T>, options: UrlOptions = {}): void {
         fetch(this.makeUrl(options, endpoint), { method })
             .then(this.errorHandler)
             .then((res) => res.json())
